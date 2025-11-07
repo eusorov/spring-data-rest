@@ -1,0 +1,171 @@
+# Cursor AI Rules - Clean Code & SOLID Principles
+
+## Core Philosophy
+Write code that is readable, maintainable, and testable. Prioritize clarity over cleverness.
+
+## Clean Code Principles
+
+### Naming Conventions
+- Use intention-revealing names that explain why something exists
+- Classes and types: PascalCase (e.g., `UserRepository`, `PaymentProcessor`)
+- Functions and variables: camelCase (e.g., `calculateTotal`, `isActive`)
+- Constants: UPPER_SNAKE_CASE (e.g., `MAX_RETRY_ATTEMPTS`)
+- Boolean variables: use prefixes like `is`, `has`, `can`, `should`
+- Avoid abbreviations unless universally understood (e.g., `url`, `id`)
+
+### Functions
+- Keep functions small (ideally < 20 lines)
+- Each function should do ONE thing and do it well
+- Use descriptive names - function names should be verbs
+- Limit parameters to 3 or fewer (use objects for more)
+- Avoid side effects - functions should be predictable
+- No boolean flags as parameters (split into separate functions)
+- Extract complex conditionals into well-named functions
+
+### Comments
+- Code should be self-documenting through clear naming
+- Only comment WHY, not WHAT (the code shows what)
+- Remove commented-out code - use version control instead
+- Document public APIs and complex algorithms
+- Use JSDoc/PHPDoc/etc for public interfaces
+
+### Code Structure
+- Organize imports: external libraries first, then internal modules
+- Keep related code together (proximity principle)
+- Use consistent formatting and indentation
+- Remove dead code immediately
+- Avoid deep nesting (max 3 levels) - use early returns
+
+## SOLID Principles
+
+### Single Responsibility Principle (SRP)
+- Each class/module should have only ONE reason to change
+- Separate concerns: data access, business logic, presentation
+- If describing a class requires "and", it likely violates SRP
+- Example: Split `UserManagerAndValidator` into `UserManager` and `UserValidator`
+
+### Open/Closed Principle (OCP)
+- Open for extension, closed for modification
+- Use interfaces, abstract classes, and composition
+- Prefer polymorphism over conditionals for varying behavior
+- Use strategy pattern for interchangeable algorithms
+- Example: Instead of if/else chains, use interface implementations
+
+### Liskov Substitution Principle (LSP)
+- Subtypes must be substitutable for their base types
+- Child classes should extend, not replace, parent behavior
+- Don't throw exceptions in overridden methods that parent doesn't throw
+- Preserve method contracts and expectations
+- Example: A `Square` shouldn't inherit from `Rectangle` if it breaks expectations
+
+### Interface Segregation Principle (ISP)
+- Many specific interfaces are better than one general interface
+- Clients shouldn't depend on methods they don't use
+- Keep interfaces focused and cohesive
+- Example: Split `IWorker` into `IWorkable`, `IEatable`, `ISleepable`
+
+### Dependency Inversion Principle (DIP)
+- Depend on abstractions, not concretions
+- High-level modules shouldn't depend on low-level modules
+- Use dependency injection
+- Program to interfaces, not implementations
+- Example: Inject `IEmailService` instead of directly using `GmailService`
+
+## Code Quality Standards
+
+### Error Handling
+- Use exceptions for exceptional cases, not control flow
+- Create custom exception types for domain errors
+- Always provide meaningful error messages
+- Clean up resources with try/finally or using statements
+- Don't catch exceptions you can't handle
+- Log errors with context (what was being attempted)
+
+### Testing
+- Write tests FIRST (TDD approach)
+- Each test should verify ONE behavior
+- Use Arrange-Act-Assert (AAA) pattern
+- Test names should describe the scenario and expected outcome
+- Mock external dependencies
+- Aim for high coverage of business logic (80%+)
+
+### Performance Considerations
+- Optimize only when necessary (measure first)
+- Avoid premature optimization
+- Use appropriate data structures
+- Be mindful of N+1 queries in database access
+- Cache expensive operations when appropriate
+- Profile before assuming bottlenecks
+
+## Architecture Patterns
+
+### Separation of Concerns
+- UI Layer: presentation only, no business logic
+- Business Layer: domain logic, validation, orchestration
+- Data Layer: database access, external APIs
+- Never access database directly from UI layer
+
+### Dependency Injection
+- Always inject dependencies through constructors
+- Use interfaces for dependencies
+- Register dependencies in a container/composition root
+- Avoid service locator pattern
+
+### Repository Pattern
+- Abstract data access behind repositories
+- Repository methods should be domain-focused
+- One repository per aggregate root
+- Keep repositories interface-based for testability
+
+## Code Review Checklist
+Before submitting code, verify:
+- [ ] Functions are small and focused
+- [ ] Names clearly express intent
+- [ ] No magic numbers or strings (use constants)
+- [ ] SOLID principles applied
+- [ ] Tests are written and passing
+- [ ] No code duplication (DRY principle)
+- [ ] Error handling is comprehensive
+- [ ] Comments explain WHY, not WHAT
+- [ ] Dependencies are injected, not hardcoded
+- [ ] No side effects in functions
+
+## Language-Specific Notes
+
+### TypeScript/JavaScript
+- Use `const` by default, `let` when reassignment needed, never `var`
+- Prefer async/await over promises chains
+- Use optional chaining (`?.`) and nullish coalescing (`??`)
+- Type everything - avoid `any`
+- Use discriminated unions for state management
+
+### Python
+- Follow PEP 8 style guide
+- Use type hints for function signatures
+- Prefer list/dict comprehensions for simple transformations
+- Use dataclasses for data structures
+- Context managers (`with`) for resource management
+
+### Java/C#
+- Use properties instead of getters/setters when appropriate
+- Leverage LINQ/Streams for collection operations
+- Make classes sealed/final by default
+- Use records/data classes for immutable data
+- Prefer composition over inheritance
+
+## Anti-Patterns to Avoid
+- God objects (classes that do everything)
+- Long parameter lists (use parameter objects)
+- Flag arguments (split into separate methods)
+- Global state and singletons (use DI instead)
+- Circular dependencies between modules
+- Deep inheritance hierarchies (favor composition)
+- Catch-all exception handlers
+- Magic strings and numbers scattered in code
+
+## When to Break These Rules
+Rules are guidelines, not laws. Break them when:
+- It significantly improves readability
+- Performance requirements demand it (measure first!)
+- The rule doesn't apply to your specific context
+- BUT: Document why you broke the rule in a comment
