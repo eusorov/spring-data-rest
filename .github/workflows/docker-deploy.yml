@@ -22,6 +22,6 @@ jobs:
             docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
             docker stop "${{ env.IMAGE_NAME }}" || true
             docker rm "${{ env.IMAGE_NAME }}" || true
-            docker run -d --name "${{ env.IMAGE_NAME }}" -p 80:8080 ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            docker run -d --name "${{ env.IMAGE_NAME }}" -e VIRTUAL_HOST=hello.usomi.de ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
 
         
