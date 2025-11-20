@@ -1,14 +1,8 @@
 name: Deploy Docker
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
   workflow_dispatch:
-
-permissions:
-  contents: read
-  packages: write
 
 env:
   IMAGE_NAME: spring-data-rest

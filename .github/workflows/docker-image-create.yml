@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: spring-data-rest
@@ -67,4 +68,7 @@ jobs:
           tags: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max,multistage=true
-
+  deploy:
+    name: Deploy
+    needs: docker
+    uses: ./.github/workflows/docker-deploy.yml
