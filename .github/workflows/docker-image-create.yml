@@ -37,7 +37,6 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    environment: prod   
     needs: test
     permissions:
       contents: read
@@ -58,7 +57,12 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Pull previous image for cache
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest || true
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache || true
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -66,8 +70,12 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,multistage=true
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache
+            type=gha
+          cache-to: |
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+            type=gha,mode=max,multistage=true
   deploy:
     name: Deploy
     needs: docker

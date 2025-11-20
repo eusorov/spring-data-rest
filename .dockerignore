@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.swp
+*.swo
+*~
+
+# Build artifacts (except what we need)
+build/
+!build/classes
+.gradle
+gradlew.bat
+# Keep gradle wrapper directory - needed for builds
+!gradle/
+!gradlew
+
+# Documentation
+*.md
+HELP.md
+
+# CI/CD
+.github
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Environment
+.env
+.env.local
+
