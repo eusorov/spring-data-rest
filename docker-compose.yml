@@ -1,0 +1,23 @@
+# Run: docker compose up -d
+# App is reachable at http://<VIRTUAL_HOST> (default: hello.usomi.de — add to /etc/hosts for local).
+# To use the image from deploy workflow: override app image, e.g.:
+#   image: ghcr.io/OWNER/spring-data-rest:latest
+#   (remove or comment out the build section)
+
+services:
+  spring-data-rest:
+    image: ghcr.io/eusorov/spring-data-rest:latest
+    container_name: spring-data-rest
+    environment:
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-hello.usomi.de}
+      VIRTUAL_PORT: 8080
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+    networks:
+      - nginx_proxy_net
+
+networks:
+  nginx_proxy_net:
+    external: true
