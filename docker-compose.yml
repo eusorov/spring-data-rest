@@ -1,5 +1,6 @@
 # Run: docker compose up -d
-# App is reachable at http://<VIRTUAL_HOST> (default: hello.usomi.de — add to /etc/hosts for local).
+# App is reachable at https://<VIRTUAL_HOST> (default: hello.usomi.de — add to /etc/hosts for local).
+# Requires nginx-proxy + acme-companion; set LETSENCRYPT_EMAIL for cert issuance.
 # To use the image from deploy workflow: override app image, e.g.:
 #   image: ghcr.io/OWNER/spring-data-rest:latest
 #   (remove or comment out the build section)
@@ -11,6 +12,7 @@ services:
     environment:
       VIRTUAL_HOST: ${VIRTUAL_HOST:-hello.usomi.de}
       VIRTUAL_PORT: 8080
+      LETSENCRYPT_HOST: ${VIRTUAL_HOST:-hello.usomi.de}
     expose:
       - "8080"
     restart: unless-stopped
