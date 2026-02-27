@@ -2,6 +2,15 @@ name: Deploy Docker
 
 on:
   workflow_call:
+    secrets:
+      VPS_HOST:
+        required: true
+      VPS_USER:
+        required: true
+      VPS_SSH_KEY:
+        required: true
+      DOCKER_TOKEN:
+        required: true
   workflow_dispatch:
 
 env:
