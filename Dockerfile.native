@@ -15,14 +15,14 @@ RUN ./gradlew dependencies --no-daemon || true
 COPY src ./src
 
 # Build native image
-RUN ./gradlew build --no-daemon
+RUN ./gradlew nativeCompile --no-daemon
 
 # The deployment Image
-FROM eclipse-temurin:25-jre
+FROM container-registry.oracle.com/os/oraclelinux:9-slim
 EXPOSE 8080
 
 # Copy the native executable into the containers
 WORKDIR /app
-COPY --from=builder /app/build/libs/*.jar ./app.jar
+COPY --from=builder /app/build/native/nativeCompile .
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["/app/spring-data-rest"]

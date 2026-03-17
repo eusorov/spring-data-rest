@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-data-rest
+  namespace: spring-data-rest
+  labels:
+    app: spring-data-rest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-data-rest
+  template:
+    metadata:
+      labels:
+        app: spring-data-rest
+    spec:
+      containers:
+        - name: spring-data-rest
+          image: spring-data-rest:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: db-credentials
+          # Optional health probes (if you have actuator/health)
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

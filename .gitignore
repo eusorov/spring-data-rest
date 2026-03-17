@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+.cursor/agents
+k8s/local/secret-db.yaml
