@@ -1,5 +1,7 @@
 package com.example.spring_data_rest.backtest.service;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -19,13 +21,13 @@ public interface BacktestService {
 
 	BacktestResponseDto getById(Long id);
 
-	BacktestResponseDto getByUniqueKey(
-		String method,
-		String asset,
-		String currency,
-		Long dateFrom,
-		Long dateTo,
-		String configHash
+	BacktestResponseDto getByAnyKey(
+		Optional<String> method,
+		Optional<String> asset,
+		Optional<String> currency,
+		Optional<Long> dateFrom,
+		Optional<Long> dateTo,
+		Optional<String> configHash
 	);
 }
 

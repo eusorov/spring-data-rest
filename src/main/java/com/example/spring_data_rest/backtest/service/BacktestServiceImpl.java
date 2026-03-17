@@ -1,6 +1,7 @@
 package com.example.spring_data_rest.backtest.service;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,25 +59,24 @@ public class BacktestServiceImpl implements BacktestService {
 	}
 
 	@Override
-	public BacktestResponseDto getByUniqueKey(
-		String method,
-		String asset,
-		String currency,
-		Long dateFrom,
-		Long dateTo,
-		String configHash
+	public BacktestResponseDto getByAnyKey(
+		Optional<String> method,
+		Optional<String> asset,
+		Optional<String> currency,
+		Optional<Long> dateFrom,
+		Optional<Long> dateTo,
+		Optional<String> configHash
 	) {
 		BacktestEntity entity = backtestRepository
 			.findByMethodOrAssetOrCurrencyOrDateFromOrDateToOrConfigHash(
-				method,
-				asset,
-				currency,
-				dateFrom,
-				dateTo,
-				configHash
+				method.orElse(null),
+				asset.orElse(null),
+				currency.orElse(null),
+				dateFrom.orElse(null),
+				dateTo.orElse(null),
+				configHash.orElse(null)
 			)
 			.orElseThrow(() -> new BacktestNotFoundException("Backtest not found for provided key"));
 		return backtestMapper.toResponseDto(entity);
 	}
 }
-

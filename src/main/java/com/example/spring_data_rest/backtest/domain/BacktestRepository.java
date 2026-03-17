@@ -19,6 +19,27 @@ public interface BacktestRepository extends JpaRepository<BacktestEntity, Long> 
 
 	Page<BacktestEntity> findByMethod(String method, Pageable pageable);
 
-	Page<BacktestEntity> findByMethodAndAssetAndCurrency(String method, String asset, String currency, Pageable pageable);
+	Page<BacktestEntity> findByMethodAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+		String method,
+		Long dateFrom,
+		Long dateTo,
+		Pageable pageable
+	);
+
+	Page<BacktestEntity> findByMethodAndAssetAndCurrency(
+		String method,
+		String asset,
+		String currency,
+		Pageable pageable
+	);
+
+	Page<BacktestEntity> findByMethodAndAssetAndCurrencyAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+		String method,
+		String asset,
+		String currency,
+		Long dateFrom,
+		Long dateTo,
+		Pageable pageable
+	);
 }
 
