@@ -1,52 +1,17 @@
 package com.example.spring_data_rest.backtest.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
-@Entity
-@Table(
-	name = "backtest",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_backtest_method_asset_currency_date_confighash",
-		columnNames = { "method", "asset", "currency", "datefrom", "dateto", "confighash" }
-	)
-)
 public class BacktestEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, length = 20)
 	private String method;
-
-	@Column(nullable = false, length = 5)
 	private String asset;
-
-	@Column(nullable = false, length = 5)
 	private String currency;
-
-	@Column(name = "datefrom", nullable = false)
 	private Long dateFrom;
-
-	@Column(name = "dateto", nullable = false)
 	private Long dateTo;
-
-	@Column(name = "confighash", nullable = false, length = 255)
 	private String configHash;
-
-	@Column(columnDefinition = "json", nullable = false)
 	private String config;
-
-	@Column(columnDefinition = "json", nullable = false)
 	private String backtest;
-
-	@Column(columnDefinition = "json", nullable = false)
 	private String performance;
 
 	public Long getId() {

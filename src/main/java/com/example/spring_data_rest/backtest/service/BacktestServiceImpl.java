@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -35,17 +36,82 @@ public class BacktestServiceImpl implements BacktestService {
 		Pageable pageable
 	) {
 		Page<BacktestEntity> page;
-		if (method == null && asset == null && currency == null) {
-			page = backtestRepository.findAll(Objects.requireNonNull(pageable));
+		boolean hasMethod = method != null;
+		boolean hasAsset = asset != null;
+		boolean hasCurrency = currency != null;
+		boolean hasDateFrom = dateFrom != null;
+		boolean hasDateTo = dateTo != null;
+
+		long limit = Objects.requireNonNull(pageable).getPageSize();
+		long offset = pageable.getOffset();
+
+		if (!hasMethod && !hasAsset && !hasCurrency && !hasDateFrom && !hasDateTo) {
+			var content = backtestRepository.findAll(limit, offset);
+			long total = backtestRepository.countAll();
+			page = new PageImpl<>(content, pageable, total);
 		}
-		else if (method != null && asset == null && currency == null) {
-			page = backtestRepository.findByMethod(method, Objects.requireNonNull(pageable));
+		else if (hasMethod && !hasAsset && !hasCurrency && hasDateFrom && hasDateTo) {
+			var content = backtestRepository
+				.findByMethodAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+					method,
+					dateFrom,
+					dateTo,
+					limit,
+					offset
+				);
+			long total = backtestRepository
+				.countByMethodAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+					method,
+					dateFrom,
+					dateTo
+				);
+			page = new PageImpl<>(content, pageable, total);
 		}
-		else if (method != null && asset != null && currency != null) {
-			page = backtestRepository.findByMethodAndAssetAndCurrency(method, asset, currency, Objects.requireNonNull(pageable));
+		else if (hasMethod && !hasAsset && !hasCurrency) {
+			var content = backtestRepository.findByMethod(method, limit, offset);
+			long total = backtestRepository.countByMethod(method);
+			page = new PageImpl<>(content, pageable, total);
+		}
+		else if (hasMethod && hasAsset && hasCurrency && hasDateFrom && hasDateTo) {
+			var content = backtestRepository
+				.findByMethodAndAssetAndCurrencyAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+					method,
+					asset,
+					currency,
+					dateFrom,
+					dateTo,
+					limit,
+					offset
+				);
+			long total = backtestRepository
+				.countByMethodAndAssetAndCurrencyAndDateFromGreaterThanEqualAndDateToLessThanEqual(
+					method,
+					asset,
+					currency,
+					dateFrom,
+					dateTo
+				);
+			page = new PageImpl<>(content, pageable, total);
+		}
+		else if (hasMethod && hasAsset && hasCurrency) {
+			var content = backtestRepository.findByMethodAndAssetAndCurrency(
+				method,
+				asset,
+				currency,
+				limit,
+				offset
+			);
+			long total = backtestRepository.countByMethodAndAssetAndCurrency(
+				method,
+				asset,
+				currency
+			);
+			page = new PageImpl<>(content, pageable, total);
 		}
 		else {
-			page = backtestRepository.findAll(Objects.requireNonNull(pageable));
+			var content = backtestRepository.findAll(limit, offset);
+			long total = backtestRepository.countAll();
+			page = new PageImpl<>(content, pageable, total);
 		}
 
 		return page.map(backtestMapper::toListItemDto);

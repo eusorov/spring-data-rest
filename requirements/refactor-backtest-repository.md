@@ -1,6 +1,6 @@
-## Refactor `BacktestRepository` from JPA to Spring Data JDBC
+## Refactor `BacktestRepository` from JPA to MyBatis
 
-This document describes the plan to migrate the `BacktestRepository` from Spring Data JPA (`JpaRepository`) to Spring Data JDBC with minimal impact on the existing API contract (DTOs, controllers, URLs, and JSON structures should remain unchanged).
+This document describes the plan to migrate the `BacktestRepository` from Spring Data JPA (`JpaRepository`) to a MyBatis-based repository with minimal impact on the existing API contract (DTOs, controllers, URLs, and JSON structures should remain unchanged).
 
 ---
 
@@ -8,7 +8,7 @@ This document describes the plan to migrate the `BacktestRepository` from Spring
 
 - **Motivation**
   - Simplify the persistence model (no lazy-loading, proxies, or JPA-specific features).
-  - Make the data access layer closer to plain SQL while still leveraging Spring Data repositories.
+  - Make the data access layer explicitly SQL-driven using MyBatis mappers.
   - Improve predictability of SQL and performance characteristics for read-heavy workloads.
 - **Constraints**
   - Preserve the existing REST API behavior and payloads.
@@ -20,44 +20,48 @@ This document describes the plan to migrate the `BacktestRepository` from Spring
 ### 2. Dependency and configuration changes
 
 - **Gradle**
-  - Replace `spring-boot-starter-data-jpa` with `spring-boot-starter-data-jdbc`.
+  - Remove `spring-boot-starter-data-jpa`.
+  - Add the MyBatis Spring Boot starter, for example `mybatis-spring-boot-starter`.
   - Keep the MySQL driver dependency unchanged.
 - **Configuration**
   - Remove JPA/Hibernate-specific properties (e.g. `spring.jpa.*`) from `application.properties`.
-  - Ensure the standard Spring Data JDBC configuration is active (no additional dialect configuration is required).
+  - Configure MyBatis mapper scanning (e.g. `@MapperScan("com.example.spring_data_rest.backtest.domain")`) and, if needed, `mybatis.*` properties for type aliases and mapper locations.
   - Keep the datasource configuration (URL, username, password, driver) as-is.
 
 ---
 
-### 3. Domain model changes for Spring Data JDBC
+### 3. Domain model changes for MyBatis
 
-Spring Data JDBC uses a simpler mapping model than JPA. Adjust the `BacktestEntity` to a JDBC-oriented aggregate:
+MyBatis works well with simple POJOs. Adjust the `BacktestEntity` to be a plain Java object, leaving table and column mapping concerns to SQL:
 
 - **Annotations and semantics**
-  - Replace `@Entity` with `@Table("backtest")`.
-  - Use `@Id` on the `id` field.
-  - Keep `@Column` annotations where column names differ from field names (`datefrom`, `dateto`, `confighash`) or where explicit definition is useful (JSON columns).
-  - Remove JPA-specific annotations such as `@GeneratedValue(strategy = GenerationType.IDENTITY)` if not supported in the chosen Spring Data JDBC version; instead rely on database-generated IDs and Spring Data JDBC’s support for identity columns.
+  - Remove JPA-specific annotations such as `@Entity`, `@Table`, `@Id`, `@GeneratedValue`, and `@Column`.
+  - Keep `BacktestEntity` as a simple POJO whose field names either match column names or are explicitly mapped in SQL.
 - **Fields**
-  - Keep the same fields and Java types as specified in section 3 (including JSON columns mapped as `String`).
-  - Ensure the class is treated as an aggregate root (no JPA relationships or proxies).
+  - Keep the same fields and Java types as in the current entity (including JSON columns mapped as `String`).
+  - Ensure any naming differences between fields and columns (e.g. `dateFrom` vs `datefrom`) are handled in SQL using column aliases (e.g. `datefrom AS dateFrom`) rather than via annotations.
 
 ---
 
-### 4. Repository migration (`BacktestRepository`)
+### 4. Repository migration (`BacktestRepository` → MyBatis mapper)
 
 - **Current state**
   - `BacktestRepository` extends `JpaRepository<BacktestEntity, Long>` with additional finder methods.
-- **Target state (Spring Data JDBC)**
-  - Change the base interface to a Spring Data JDBC–compatible repository, for example:
-    - `PagingAndSortingRepository<BacktestEntity, Long>` (for paging support) or an equivalent Spring Data JDBC paging interface supported by the Spring Boot version in use.
-  - Keep the existing finder method signatures as much as possible:
-    - `Optional<BacktestEntity> findByMethodAndAssetAndCurrencyAndDateFromAndDateToAndConfigHash(...)`
-    - `Page<BacktestEntity> findByMethod(String method, Pageable pageable);`
-    - `Page<BacktestEntity> findByMethodAndAssetAndCurrency(String method, String asset, String currency, Pageable pageable);`
-  - If the Spring Data JDBC version does not support `Page` directly, introduce one of the following strategies:
-    - Implement custom repository methods that run count + limited queries using `JdbcTemplate` and manually construct `Page<BacktestEntity>`.
-    - Or, if acceptable, relax strict `Page` usage to `Slice`/`List` on the service layer while keeping the API contract stable (e.g. custom page wrapper).
+- **Target state (MyBatis mapper)**
+  - Convert `BacktestRepository` into a MyBatis mapper interface, annotated with `@Mapper`.
+  - Define explicit SQL for each method using MyBatis annotations (or XML mappers, if preferred). For example, the simplest `findById` should look like:
+
+    ```java
+    @Select("SELECT * FROM backtest WHERE id = #{id}")
+    Optional<BacktestEntity> findById(Long id);
+    ```
+
+  - Replace existing derived query methods with explicit SQL that preserves current semantics:
+    - `Optional<BacktestEntity> findByMethodAndAssetAndCurrencyAndDateFromAndDateToAndConfigHash(...)` → a `SELECT ... FROM backtest WHERE method = #{method} AND asset = #{asset} AND currency = #{currency} AND datefrom = #{dateFrom} AND dateto = #{dateTo} AND confighash = #{configHash}` with proper column aliases where needed.
+    - Methods currently returning `Page<BacktestEntity>` (e.g. `findByMethod`, `findByMethodAndAssetAndCurrency`) will be backed by:
+      - A `List<BacktestEntity>` mapper method with `LIMIT` / `OFFSET` parameters for page content.
+      - A corresponding `long countBy...(...)` method for total elements.
+  - The service layer will wrap `List<BacktestEntity>` + count in `PageImpl<BacktestEntity>` to keep the public API returning `Page<BacktestEntity>`.
 
 ---
 
@@ -65,8 +69,11 @@ Spring Data JDBC uses a simpler mapping model than JPA. Adjust the `BacktestEnti
 
 - **Service layer**
   - Keep `BacktestService` and `BacktestServiceImpl` interfaces and signatures unchanged.
-  - Adapt internal calls to use the Spring Data JDBC–based `BacktestRepository`.
-  - If repository paging semantics change (e.g. custom paging implementation), encapsulate that logic entirely inside the service layer so controllers and DTOs are unaffected.
+  - Inject the MyBatis-based `BacktestRepository` mapper instead of the JPA repository.
+  - Implement paging by:
+    - Calling the mapper’s `List<BacktestEntity>` methods with calculated `LIMIT` and `OFFSET` based on `Pageable`.
+    - Calling the corresponding `countBy...` methods.
+    - Constructing `PageImpl<BacktestEntity>` using `PageRequest` and returning it to controllers, preserving existing behavior.
 - **Controller**
   - No changes expected to controller method signatures or endpoint URLs.
   - Ensure that pagination and filtering behavior (query parameters and default values) remain the same from the client perspective.
@@ -76,11 +83,11 @@ Spring Data JDBC uses a simpler mapping model than JPA. Adjust the `BacktestEnti
 ### 6. Testing and verification strategy for the migration
 
 - **Unit and service tests**
-  - Reuse existing service tests (`BacktestServiceImplTest`) to validate behavior against the new repository implementation.
-  - Add tests to cover any new custom paging logic if `Page` needs to be constructed manually.
+  - Reuse existing service tests (`BacktestServiceImplTest`) to validate behavior against the new MyBatis-based repository.
+  - Add tests to cover any new custom paging logic where `PageImpl` is constructed in the service layer.
 - **Repository/integration tests**
-  - Add Spring Data JDBC–focused integration tests against MySQL (or Testcontainers) to:
-    - Verify entity mapping to the `backtest` table.
+  - Add MyBatis-focused integration tests against MySQL (or Testcontainers) to:
+    - Verify that `BacktestEntity` correctly maps to the `backtest` table via MyBatis result mapping.
     - Confirm that JSON columns are correctly persisted and read back as strings.
     - Confirm that finder methods return expected results with filters and sorting.
 - **API regression tests**
@@ -90,24 +97,32 @@ Spring Data JDBC uses a simpler mapping model than JPA. Adjust the `BacktestEnti
 
 ### 7. Step-by-step migration order
 
-1. **Introduce Spring Data JDBC dependency and basic configuration**
-   - Add `spring-boot-starter-data-jdbc` and remove `spring-boot-starter-data-jpa`.
+1. **Introduce MyBatis dependency and basic configuration**
+   - Add `mybatis-spring-boot-starter` and remove `spring-boot-starter-data-jpa`.
    - Clean up JPA/Hibernate-specific properties while keeping datasource configuration.
+   - Configure MyBatis mapper scanning and (optionally) XML locations.
 2. **Refactor the domain model**
-   - Update `BacktestEntity` annotations for Spring Data JDBC.
-   - Ensure it compiles and maps correctly without JPA.
-3. **Migrate `BacktestRepository`**
-   - Change the base interface to a Spring Data JDBC repository (`PagingAndSortingRepository` or equivalent).
-   - Adjust finder method signatures only if strictly required by Spring Data JDBC.
-4. **Adjust service implementation if needed**
-   - Update `BacktestServiceImpl` to work with the JDBC-based repository (especially for paging).
+   - Strip JPA-specific annotations from `BacktestEntity`, keeping it as a plain POJO.
+   - Ensure the class compiles and field names are suitable for SQL-based mapping (or provide column aliases in SQL).
+3. **Migrate `BacktestRepository` to a MyBatis mapper**
+   - Convert `BacktestRepository` into an `@Mapper` interface.
+   - Introduce the basic `findById` method using an annotation-based query:
+
+     ```java
+     @Select("SELECT * FROM backtest WHERE id = #{id}")
+     Optional<BacktestEntity> findById(Long id);
+     ```
+
+   - Add remaining finder methods with explicit SQL (and `countBy...` variants for paging).
+4. **Adjust service implementation**
+   - Update `BacktestServiceImpl` to call mapper methods instead of JPA repository methods.
+   - Implement `PageImpl` construction around mapper results to preserve existing paging behavior.
 5. **Update and extend tests**
    - Fix any failing unit/service tests.
-   - Add integration tests for JDBC mappings and queries.
+   - Add integration tests for MyBatis mappings and queries.
 6. **Run full regression suite**
    - Execute all tests (unit, integration, controller).
    - Manually test key endpoints (list, get by id, get by composite key) against a real database.
 7. **Cleanup**
    - Remove any remaining unused JPA imports, annotations, or configuration.
-   - Update project documentation to mention the use of Spring Data JDBC instead of JPA.
-
+   - Update project documentation to mention the use of MyBatis instead of JPA.
