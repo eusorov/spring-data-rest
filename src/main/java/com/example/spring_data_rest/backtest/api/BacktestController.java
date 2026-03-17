@@ -75,11 +75,7 @@ public class BacktestController {
 		@RequestParam("dateTo") Long dateTo,
 		@RequestParam("configHash") String configHash
 	) {
-		if (dateFrom == null || dateTo == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dateFrom and dateTo are required");
-		}
 		BacktestResponseDto dto = backtestService.getByUniqueKey(method, asset, currency, dateFrom, dateTo, configHash);
 		return ResponseEntity.ok(dto);
 	}
 }
-

@@ -67,7 +67,7 @@ public class BacktestServiceImpl implements BacktestService {
 		String configHash
 	) {
 		BacktestEntity entity = backtestRepository
-			.findByMethodAndAssetAndCurrencyAndDateFromAndDateToAndConfigHash(
+			.findByMethodOrAssetOrCurrencyOrDateFromOrDateToOrConfigHash(
 				method,
 				asset,
 				currency,

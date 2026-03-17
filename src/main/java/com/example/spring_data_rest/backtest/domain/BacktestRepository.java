@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BacktestRepository extends JpaRepository<BacktestEntity, Long> {
 
-	Optional<BacktestEntity> findByMethodAndAssetAndCurrencyAndDateFromAndDateToAndConfigHash(
+	Optional<BacktestEntity> findByMethodOrAssetOrCurrencyOrDateFromOrDateToOrConfigHash(
 		String method,
 		String asset,
 		String currency,
